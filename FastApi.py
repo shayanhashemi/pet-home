@@ -42,3 +42,20 @@ def update_cart(user_id: str, item_id: str, quantity: int):
     user_history.append(('update', item_id, quantity))
 
     return {'message': 'Cart updated successfully'}
+
+@app.delete('/cart/{user_id}/{item_id}')
+def remove_from_cart(user_id: str, item_id: str):
+    if user_id not in shopping_carts:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user_cart = shopping_carts[user_id]
+    user_history = cart_history.setdefault(user_id, deque())
+
+    if item_id not in user_cart:
+        raise HTTPException(status_code=404, detail="Item not found")
+
+    user_cart.remove(item_id)
+
+    user_history.append(('remove', item_id))
+
+    return {'message': 'Item removed from cart successfully'}
