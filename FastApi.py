@@ -1,7 +1,7 @@
 from collections import deque
 import sqlite3
 from fastapi import FastAPI, HTTPException
-import json
+
 
 conn = sqlite3.connect('Database.db', timeout=360, check_same_thread=False, isolation_level=None)
 
@@ -134,15 +134,24 @@ def get_products():
     cur.close()
     return data
 
-@app.get('/products/{product_id}')
+@app.get('/product/{product_id}')
 def get_product(product_id: int):
     global conn
     cur = conn.cursor()
     cur.execute(f'SELECT title, price, brand, category, score, stock, description, img FROM products WHERE id = "{product_id}";')
-    ProductTemp = cur.fetchone()
+    product_data = cur.fetchone()
     cur.close()
-    if ProductTemp is None:
+    if product_data is None:
         raise HTTPException(status_code=404, detail="Product not found")
     else:
-        TempDic = {'title': ProductTemp[0], 'price': ProductTemp[1], 'brand': ProductTemp[2], 'category': ProductTemp[3], 'score': ProductTemp[4], 'stock': ProductTemp[5], 'description': ProductTemp[6], 'img': ProductTemp[7]}
-        return json.dumps(TempDic)
+        product_dict = {
+            'title': product_data[0],
+            'price': product_data[1],
+            'brand': product_data[2],
+            'category': product_data[3],
+            'score': product_data[4],
+            'stock': product_data[5],
+            'description': product_data[6],
+            'img': product_data[7]
+        }
+        return product_dict
