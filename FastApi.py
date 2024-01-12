@@ -112,3 +112,12 @@ def add_blog(title: str, score: float, category: str, summary: str, date: str, i
     cur.close()
 
     return {"message": "Blog added successfully", "blog_id": blog_id}
+
+@app.put('/blog/change-score/{blog_id}')
+def change_score_blog(blog_id: int, new_score: float):
+    global conn
+    cur = conn.cursor()
+    cur.execute(f'UPDATE blog SET score = {new_score} WHERE id = {blog_id};')
+    conn.commit()
+    cur.close()
+    return {"message": "Score updated successfully"}
