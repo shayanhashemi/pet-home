@@ -215,3 +215,16 @@ def get_products_in_price_range(min_price: float, max_price: float):
         raise HTTPException(status_code=404, detail=f"No products found in the specified price range")
 
     return products_in_price_range
+
+@app.get('/product/matching-title/')
+def get_products_with_matching_title(title: str):
+    global conn
+    cur = conn.cursor()
+    cur.execute(f'SELECT * FROM products WHERE title LIKE "%{title}%";')
+    matching_products = cur.fetchall()
+    cur.close()
+
+    if not matching_products:
+        raise HTTPException(status_code=404, detail=f"No products found with matching title: {title}")
+
+    return matching_products
