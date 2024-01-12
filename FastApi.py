@@ -202,3 +202,16 @@ def get_products_in_category(category: str):
         raise HTTPException(status_code=404, detail=f"No products found in category: {category}")
 
     return products_in_category
+
+@app.get('/product/price-range/')
+def get_products_in_price_range(min_price: float, max_price: float):
+    global conn
+    cur = conn.cursor()
+    cur.execute(f'SELECT * FROM products WHERE price >= {min_price} AND price <= {max_price};')
+    products_in_price_range = cur.fetchall()
+    cur.close()
+
+    if not products_in_price_range:
+        raise HTTPException(status_code=404, detail=f"No products found in the specified price range")
+
+    return products_in_price_range
