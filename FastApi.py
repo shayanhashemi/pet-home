@@ -79,3 +79,22 @@ def get_blogs():
     cur.close()
     return data
 
+@app.get('/blog/{blog_id}')
+def get_blog(blog_id: int):
+    global conn
+    cur = conn.cursor()
+    cur.execute(f'SELECT title, score, category, summary, date, img FROM blog WHERE id = "{blog_id}";')
+    blog_data = cur.fetchone()
+    cur.close()
+    if blog_data is None:
+        raise HTTPException(status_code=404, detail="Blog not found")
+    else:
+        blog_dict = {
+            'title': blog_data[0],
+            'score': blog_data[1],
+            'category': blog_data[2],
+            'summary': blog_data[3],
+            'date': blog_data[4],
+            'img': blog_data[5]
+        }
+        return blog_dict
