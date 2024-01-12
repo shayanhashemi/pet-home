@@ -63,3 +63,7 @@ def remove_from_cart(user_id: str, item_id: str):
 @app.get('/cart/{user_id}')
 def get_cart(user_id: str):
     return list(shopping_carts.get(user_id, set()))
+
+@app.get('/cart/history/{user_id}')
+def get_cart_history(user_id: str):
+    return list(cart_history.get(user_id, []))
