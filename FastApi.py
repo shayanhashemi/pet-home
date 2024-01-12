@@ -179,3 +179,13 @@ def change_score_product(product_id: int, new_score: float):
     cur.close()
 
     return {"message": "Score updated successfully"}
+
+@app.put('/product/change-stock/{product_id}')
+def change_stock(product_id: int, new_stock: int):
+    global conn
+    cur = conn.cursor()
+    cur.execute(f'UPDATE products SET stock = {new_stock} WHERE id = {product_id};')
+    conn.commit()
+    cur.close()
+
+    return {"message": "Stock updated successfully"}
