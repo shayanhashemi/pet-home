@@ -98,3 +98,17 @@ def get_blog(blog_id: int):
             'img': blog_data[5]
         }
         return blog_dict
+
+@app.post('/blog/add')
+def add_blog(title: str, score: float, category: str, summary: str, date: str, img: str):
+    global conn
+    cur = conn.cursor()
+    cur.execute(
+        f'INSERT INTO blog (title, score, category, summary, date, img) '
+        f'VALUES ("{title}", {score}, "{category}", "{summary}", "{date}", "{img}");'
+    )
+    blog_id = cur.lastrowid
+    conn.commit()
+    cur.close()
+
+    return {"message": "Blog added successfully", "blog_id": blog_id}
