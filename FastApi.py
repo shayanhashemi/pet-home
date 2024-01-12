@@ -169,3 +169,13 @@ def add_product(title: str, price: float, brand: str, category: str, score: floa
     cur.close()
 
     return {"message": "Product added successfully", "product_id": product_id}
+
+@app.put('/product/change-score/{product_id}')
+def change_score_product(product_id: int, new_score: float):
+    global conn
+    cur = conn.cursor()
+    cur.execute(f'UPDATE products SET score = {new_score} WHERE id = {product_id};')
+    conn.commit()
+    cur.close()
+
+    return {"message": "Score updated successfully"}
