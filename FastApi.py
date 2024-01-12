@@ -59,3 +59,7 @@ def remove_from_cart(user_id: str, item_id: str):
     user_history.append(('remove', item_id))
 
     return {'message': 'Item removed from cart successfully'}
+
+@app.get('/cart/{user_id}')
+def get_cart(user_id: str):
+    return list(shopping_carts.get(user_id, set()))
