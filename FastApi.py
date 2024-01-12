@@ -155,3 +155,17 @@ def get_product(product_id: int):
             'img': product_data[7]
         }
         return product_dict
+    
+@app.post('/product/add')
+def add_product(title: str, price: float, brand: str, category: str, score: float, stock: int, description: str, img: str):
+    global conn
+    cur = conn.cursor()
+    cur.execute(
+        f'INSERT INTO products (title, price, brand, category, score, stock, description, img) '
+        f'VALUES ("{title}", {price}, "{brand}", "{category}", {score}, {stock}, "{description}", "{img}");'
+    )
+    product_id = cur.lastrowid
+    conn.commit()
+    cur.close()
+
+    return {"message": "Product added successfully", "product_id": product_id}
