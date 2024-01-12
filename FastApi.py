@@ -121,3 +121,14 @@ def change_score_blog(blog_id: int, new_score: float):
     conn.commit()
     cur.close()
     return {"message": "Score updated successfully"}
+
+@app.get('/products/')
+def get_products():
+    global conn
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM products")
+    columns = [col[0] for col in cur.description]
+    rows = cur.fetchall()
+    data = [dict(zip(columns, row)) for row in rows]
+    cur.close()
+    return data
