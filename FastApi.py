@@ -189,3 +189,16 @@ def change_stock(product_id: int, new_stock: int):
     cur.close()
 
     return {"message": "Stock updated successfully"}
+
+@app.get('/product/category/{category}')
+def get_products_in_category(category: str):
+    global conn
+    cur = conn.cursor()
+    cur.execute(f'SELECT * FROM products WHERE category = "{category}";')
+    products_in_category = cur.fetchall()
+    cur.close()
+
+    if not products_in_category:
+        raise HTTPException(status_code=404, detail=f"No products found in category: {category}")
+
+    return products_in_category
