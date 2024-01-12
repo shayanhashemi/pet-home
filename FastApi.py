@@ -67,3 +67,15 @@ def get_cart(user_id: str):
 @app.get('/cart/history/{user_id}')
 def get_cart_history(user_id: str):
     return list(cart_history.get(user_id, []))
+
+@app.get('/blogs/')
+def get_blogs():
+    global conn
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM blog")
+    columns = [col[0] for col in cur.description]
+    rows = cur.fetchall()
+    data = [dict(zip(columns, row)) for row in rows]
+    cur.close()
+    return data
+
