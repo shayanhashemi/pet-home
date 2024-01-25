@@ -2,7 +2,6 @@ from collections import deque
 import sqlite3
 from fastapi import FastAPI, HTTPException
 
-
 conn = sqlite3.connect('Database.db', timeout=360, check_same_thread=False, isolation_level=None)
 
 app = FastAPI()
@@ -10,23 +9,72 @@ app = FastAPI()
 shopping_carts = {}
 cart_history = {}
 
+class Node:
+    def __init__(self, data=None):
+        self.data = data
+        self.next = None
+
+class LinkedList:
+    def __init__(self):
+        self.head = None
+
+    def add_node(self, data):
+        new_node = Node(data)
+        new_node.next = self.head
+        self.head = new_node
+
+    def get_all_nodes(self):
+        nodes = []
+        current = self.head
+        while current:
+            nodes.append(current.data)
+            current = current.next
+        return nodes
+
+class Stack:
+    def __init__(self):
+        self.items = []
+
+    def push(self, item):
+        self.items.append(item)
+
+    def pop(self):
+        if not self.is_empty():
+            return self.items.pop()
+
+    def is_empty(self):
+        return len(self.items) == 0
+
+class ScoreQueue:
+    def __init__(self):
+        self.queue = deque(maxlen=10)  # Keep track of the last 10 updated scores
+
+    def enqueue(self, score):
+        self.queue.append(score)
+
+    def get_recent_scores(self):
+        return list(self.queue)
+
+recently_added_stack = Stack()
+recent_scores_queue = ScoreQueue()
+recently_added_list = LinkedList()
+
 @app.post('/cart/{user_id}')
 def add_to_cart(user_id: str, item_id: str, quantity: int):
     if quantity <= 0:
         raise HTTPException(status_code=400, detail="Quantity must be greater than 0")
 
-    user_cart = shopping_carts.setdefault(user_id, set())
+    user_cart = shopping_carts.setdefault(user_id, {})
     user_history = cart_history.setdefault(user_id, deque())
 
     if item_id in user_cart:
-        raise HTTPException(status_code=400, detail="Item already in the cart")
-
-    user_cart.add(item_id)
+        user_cart[item_id] += quantity
+    else:
+        user_cart[item_id] = quantity
 
     user_history.append(('add', item_id, quantity))
 
     return {'message': 'Item added to cart successfully'}
-
 
 @app.put('/cart/{user_id}/{item_id}')
 def update_cart(user_id: str, item_id: str, quantity: int):
@@ -39,13 +87,14 @@ def update_cart(user_id: str, item_id: str, quantity: int):
     if item_id not in user_cart:
         raise HTTPException(status_code=404, detail="Item not found or invalid request")
 
+    user_cart[item_id] = quantity
 
     user_history.append(('update', item_id, quantity))
 
     return {'message': 'Cart updated successfully'}
 
 @app.delete('/cart/{user_id}/{item_id}')
-def remove_from_cart(user_id: str, item_id: str):
+def remove_from_cart(user_id: str, item_id: str, quantity: int = None):
     if user_id not in shopping_carts:
         raise HTTPException(status_code=404, detail="User not found")
 
@@ -55,7 +104,10 @@ def remove_from_cart(user_id: str, item_id: str):
     if item_id not in user_cart:
         raise HTTPException(status_code=404, detail="Item not found")
 
-    user_cart.remove(item_id)
+    if quantity is not None and user_cart[item_id] > quantity:
+        user_cart[item_id] -= quantity
+    else:
+        del user_cart[item_id]
 
     user_history.append(('remove', item_id))
 
@@ -99,10 +151,11 @@ def get_blog(blog_id: int):
             'img': blog_data[5]
         }
         return blog_dict
+    
 
 @app.post('/blog/add')
 def add_blog(title: str, score: float, category: str, summary: str, date: str, img: str):
-    global conn
+    global conn, recently_added_list
     cur = conn.cursor()
     cur.execute(
         f'INSERT INTO blog (title, score, category, summary, date, img) '
@@ -111,18 +164,24 @@ def add_blog(title: str, score: float, category: str, summary: str, date: str, i
     blog_id = cur.lastrowid
     conn.commit()
     cur.close()
-
+    recently_added_list.add_node(blog_id)
     return {"message": "Blog added successfully", "blog_id": blog_id}
 
+
+@app.get('/recently-added-blogs/')
+def get_recently_added_blogs():
+    global recently_added_list
+    return {"recently_added_blogs": recently_added_list.get_all_nodes()}
+
 @app.put('/blog/change-score/{blog_id}')
-def change_score_blog(blog_id: int, new_score: float):
+def change_score(blog_id: int, new_score: float):
     global conn
     cur = conn.cursor()
     cur.execute(f'UPDATE blog SET score = {new_score} WHERE id = {blog_id};')
     conn.commit()
     cur.close()
     return {"message": "Score updated successfully"}
-
+    
 @app.get('/products/')
 def get_products():
     global conn
@@ -133,7 +192,8 @@ def get_products():
     data = [dict(zip(columns, row)) for row in rows]
     cur.close()
     return data
-
+    
+    
 @app.get('/product/{product_id}')
 def get_product(product_id: int):
     global conn
@@ -170,15 +230,23 @@ def add_product(title: str, price: float, brand: str, category: str, score: floa
 
     return {"message": "Product added successfully", "product_id": product_id}
 
+
 @app.put('/product/change-score/{product_id}')
 def change_score_product(product_id: int, new_score: float):
-    global conn
+    global conn, recent_scores_queue
     cur = conn.cursor()
     cur.execute(f'UPDATE products SET score = {new_score} WHERE id = {product_id};')
     conn.commit()
     cur.close()
 
+    recent_scores_queue.enqueue(new_score)
+
     return {"message": "Score updated successfully"}
+
+@app.get('/recently-updated-scores/')
+def get_recently_updated_scores():
+    global recent_scores_queue
+    return {"recently_updated_scores": recent_scores_queue.get_recent_scores()}
 
 @app.put('/product/change-stock/{product_id}')
 def change_stock(product_id: int, new_stock: int):
@@ -228,3 +296,4 @@ def get_products_with_matching_title(title: str):
         raise HTTPException(status_code=404, detail=f"No products found with matching title: {title}")
 
     return matching_products
+
